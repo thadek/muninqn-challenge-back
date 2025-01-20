@@ -16,8 +16,9 @@ Pasos para la instalación y ejecución en Windows:
 1) Clonar repositorio y  ejecutar `composer install`
 2) Configurar `.env` a partir del `.env.example`
 3) Ejecutar `php artisan migrate` para crear las migraciones en la db y `php artisan db:seed` para cargar los datos de prueba.
-4) Chequear con los tests que este todo funcionando correctamente, ejecutando `php artisan test`
-5) Si los tests pasan correctamente,  ejecutar `php artisan serve` y la API deberia estar funcionando en localhost:8000
+4) Ejecutar `php artisan jwt:secret` para setear una secret key para los tokens.
+5) Chequear con los tests que este todo funcionando correctamente, ejecutando `php artisan test`
+6) Si los tests pasan correctamente,  ejecutar `php artisan serve` y la API deberia estar funcionando en localhost:8000
 
 ## Aclaraciones y datos relevantes
 
