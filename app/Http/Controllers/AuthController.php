@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\Roles;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\RegisterUserRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -19,12 +22,16 @@ class AuthController extends Controller
     public function login(Request $request)
     {
 
-        $request->validate(['email' => 'required|email', 'password' => 'required|min:8']);
+        $request->validate(['identifier' => 'required|string', 'password' => 'required|min:8']);
 
-        $credentials = request(['email', 'password']);
+        $credentials = filter_var($request->identifier, FILTER_VALIDATE_EMAIL)
+            ? ['email' => $request->identifier]
+            : ['dni' => $request->identifier];
+
+        $credentials['password'] = $request->password;
 
         if (! $token = auth()->attempt($credentials)) {
-            return jsonResponse(data:[],message:'Credenciales incorrectas',status: Response::HTTP_UNAUTHORIZED);
+            return response()->json(["error"=>'Credenciales incorrectas',"status"=> Response::HTTP_UNAUTHORIZED], Response::HTTP_UNAUTHORIZED);
         }
 
         return $this->respondWithToken($token);
@@ -64,9 +71,10 @@ class AuthController extends Controller
     {
         return jsonResponse(
             [
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
+            'token' => $token,
+            'expires_in' => auth()->factory()->getTTL() * 60,
+            'user' => UserResource::make(auth()->user())
+
         ]);
     }
 
@@ -82,15 +90,23 @@ class AuthController extends Controller
         if(!auth()->user()){
             return jsonResponse(data:[],message:'Usuario no autenticado',status: Response::HTTP_UNAUTHORIZED);
         }
-        return jsonResponse(data:auth()->user(),message:'',status: Response::HTTP_OK);
+        return jsonResponse(data:UserResource::make(auth()->user()),message:'',status: Response::HTTP_OK);
     }
 
 
+    /**
+     * Registrar un usuario a traves de una transacción a la DB.
+     * @param RegisterUserRequest $request
+     * @return JsonResponse
+     */
     public function register(RegisterUserRequest $request):JsonResponse
     {
 
-        $user = User::create($request->all());
-        return jsonResponse($user,Response::HTTP_CREATED,'Usuario creado con exito');
+        return  transactional(function () use ($request){
+           $user = User::create($request->validated());
+           $user->assignRole(Roles::USER);
+           return jsonResponse(data:['user'=>UserResource::make($user)],status:Response::HTTP_CREATED,message:'Usuario creado con exito');
+       });
 
     }
 }

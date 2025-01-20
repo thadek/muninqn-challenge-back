@@ -1,11 +1,10 @@
 <?php
 
-namespace Tests\Feature;
+namespace Auth;
 
-use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Database\Seeders\UserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
 class RegisterTest extends TestCase
@@ -16,7 +15,9 @@ class RegisterTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(RoleSeeder::class);
         $this->seed(UserSeeder::class);
+
     }
 
 
@@ -30,21 +31,26 @@ class RegisterTest extends TestCase
         $userRegisterRequest = [
             'name' => 'Test',
             'email' => 'nonexistent@example.com',
+            'dni'=>'99999999',
             'last_name' => 'Test',
             'password' => 'password123',
             'password_confirmation' => 'password123'];
 
         #Haciendo
-        $response = $this->post("{$this->apiBase}/register", $userRegisterRequest);
+        $response = $this->post("{$this->apiBase}/auth/register", $userRegisterRequest);
         #Esperando
 
         $response->assertStatus(201);
-        $response->assertJsonStructure(['data'=>['id','name','email','last_name','created_at','updated_at']]);
+        $response->assertJsonStructure(['data'=>['user'=>['id','name','email','last_name','roles']]]);
+
+        $this->assertDatabaseCount('users', 3);
         $this->assertDatabaseHas('users', [
             'name' => 'Test',
             'email' => 'nonexistent@example.com',
             'last_name' => 'Test',
         ]);
+
+
 
     }
 
@@ -64,7 +70,7 @@ class RegisterTest extends TestCase
         ]; // Email field omitted
 
         # Haciendo
-        $response = $this->postJson("{$this->apiBase}/register", $credentials);
+        $response = $this->postJson("{$this->apiBase}/auth/register", $credentials);
 
         # Esperando
         $response->assertStatus(422); // Assuming 422 Unprocessable Entity for validation errors
@@ -86,7 +92,7 @@ class RegisterTest extends TestCase
         ]; // Password field omitted
 
         # Haciendo
-        $response = $this->postJson("{$this->apiBase}/register", $credentials);
+        $response = $this->postJson("{$this->apiBase}/auth/register", $credentials);
 
         # Esperando
         $response->assertStatus(422); // Assuming 422 Unprocessable Entity for validation errors
@@ -108,7 +114,7 @@ class RegisterTest extends TestCase
         ]; // password_confirmation field omitted
 
         # Haciendo
-        $response = $this->postJson("{$this->apiBase}/register", $credentials);
+        $response = $this->postJson("{$this->apiBase}/auth/register", $credentials);
 
         # Esperando
         $response->assertStatus(422); // Assuming 422 Unprocessable Entity for validation errors
@@ -132,7 +138,7 @@ class RegisterTest extends TestCase
         ];
 
         # Haciendo
-        $response = $this->postJson("{$this->apiBase}/register", $credentials);
+        $response = $this->postJson("{$this->apiBase}/auth/register", $credentials);
 
         # Esperando
         $response->assertStatus(422);
@@ -151,7 +157,7 @@ class RegisterTest extends TestCase
         ]; // Password is less than 8 characters
 
         # Haciendo
-        $response = $this->postJson("{$this->apiBase}/register", $credentials);
+        $response = $this->postJson("{$this->apiBase}/auth/register", $credentials);
 
         # Esperando
         $response->assertStatus(422); // Validation error

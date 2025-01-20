@@ -4,14 +4,14 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreTaskRequest extends FormRequest
+class UpdateTaskRequest extends FormRequest
 {
     /**
-     * Chequeo authentication
+     * Determine if the user is authorized to make this request.
      */
     public function authorize(): bool
     {
-        return auth()->check() ;
+        return auth()->check();
     }
 
     /**
@@ -21,16 +21,14 @@ class StoreTaskRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            "title" => "required|string|max:255",
-            "description" => "required|string|max:255",
+        $rules = [
+            "title" => "string|max:255",
+            "description" => "string|max:255",
             'status' => [
-                'required',
                 'string',
                 'in:pendiente,en progreso,completada',
             ],
             'priority' => [
-                'required',
                 'string',
                 'in:alta,media,baja',
             ],
@@ -39,7 +37,16 @@ class StoreTaskRequest extends FormRequest
                 'exists:users,id',
                 'nullable',
             ]
-
         ];
+
+
+        if ($this->isMethod('put')) {
+            $rules['title'] = 'required|' . $rules['title'];
+            $rules['description'] = 'required|' . $rules['description'];
+            $rules['status'][] = 'required';
+            $rules['priority'][] = 'required';
+        }
+
+        return $rules;
     }
 }
